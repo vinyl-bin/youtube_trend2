@@ -1,0 +1,38 @@
+spring:
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    #    url: jdbc:mysql://localhost:3306/dbProject_final?serverTimezone=UTC&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/trend_analysis?serverTimezone=UTC&characterEncoding=UTF-8
+    username: dabin
+    password: dabin1234
+  jpa:
+    database: mysql
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: true
+    hibernate:
+#      ddl-auto: update
+      ddl-auto: create
+      naming:
+        #        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    ignored: /**
+    user:
+      password:
+        encoder:
+          enabled: true
+          algorithm: sha-256
+#  config:
+#    import: file:/home/dabin/Desktop/SpringBoot/db_project/db_project/src/main/resources/applicationValue.properties    # ?? ? ??? ?? ??
+
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type: trace
