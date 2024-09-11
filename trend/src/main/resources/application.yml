@@ -28,8 +28,8 @@ spring:
         encoder:
           enabled: true
           algorithm: sha-256
-#  config:
-#    import: file:/home/dabin/Desktop/SpringBoot/db_project/db_project/src/main/resources/applicationValue.properties    # ?? ? ??? ?? ??
+  config:
+    import: applicationValue.yml
 
 
 logging:

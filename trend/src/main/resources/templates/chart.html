@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Chart</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .chart-container {
+            width: 90%;
+            height: 800px; /* 차트의 높이 고정 */
+            overflow-y: auto; /* 스크롤 가능 */
+            overflow-x: auto; /* 가로 스크롤 가능 */
+        }
+    </style>
+</head>
+<body>
+<div class="chart-container">
+    <p style="font-size: small; color : gray;">바를 누르면 해당 URL로 이동합니다.</p>
+    <canvas id="shortsChart" width="400"></canvas>
+</div>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var shorts = /*[[${shorts}]]*/ [];
+
+    var labels = shorts.map(function(short) {
+        return short.title; // 라벨 이름만 반환
+    });
+
+    var data = shorts.map(function(short) {
+        return short.views;
+    });
+
+    // 각 쇼츠별로 다른 색상을 지정
+    var backgroundColors = [
+        'rgb(75, 192, 192)',
+        'rgb(255, 99, 132)',
+        'rgb(255, 206, 86)',
+        'rgb(54, 162, 235)',
+        'rgb(153, 102, 255)'
+    ];
+
+    var borderColors = [
+        'rgb(75, 192, 192)',
+        'rgb(255, 99, 132)',
+        'rgb(255, 206, 86)',
+        'rgb(54, 162, 235)',
+        'rgb(153, 102, 255)'
+    ];
+
+    var ctx = document.getElementById('shortsChart').getContext('2d');
+    var shortsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Views',
+                data: data,
+                backgroundColor: backgroundColors,
+                borderColor: borderColors,
+                borderWidth: 1,
+                barThickness: 20 // 바의 두께를 고정
+            }]
+        },
+        options: {
+            indexAxis: 'y', // 'y'로 설정하여 행과 열을 바꿈
+            scales: {
+                x: {
+                    beginAtZero: true
+                },
+                y: {
+                    barPercentage: 0.5, // 바의 너비를 조정 (0.5로 설정하여 바가 더 좁아짐)
+                    categoryPercentage: 15, // 카테고리 간의 간격 조정 (0.8로 설정하여 간격을 조정)
+                    ticks: {
+                        padding: 10 // 라벨과 바 사이의 간격 조정
+                    }
+                }
+            },
+            maintainAspectRatio: false, // 차트 크기 고정
+            onClick: function(e) {
+                var activePoints = shortsChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                if (activePoints.length > 0) {
+                    var index = activePoints[0].index;
+                    window.open(shorts[index].url, '_blank');
+                }
+            }
+        }
+    });
+    /*]]>*/
+</script>
+</body>
+</html>
