@@ -53,39 +53,61 @@ public class YouTubeService {
 
         search.setType(Collections.singletonList("video"));
         search.setOrder("viewCount"); // 조회수 기준으로 정렬
-        search.setMaxResults(100L); // 최대 100개의 동영상 가져오기
+        search.setMaxResults(50L); // 최대 50개의 동영상 가져오기 (YouTube API의 한계)
         search.setRegionCode("KR");
         search.setVideoDuration("short");   //4분 미만 영상
         search.setPublishedAfter(formattedDate);  //현재 시간 기준 한달 전 영상부터 표시
 
-        // 요청 실행
-        SearchListResponse searchResponse = search.execute();
-        List<SearchResult> searchResultList = searchResponse.getItems();
-
         // 결과를 저장할 리스트
         List<Shorts> shortsList = new ArrayList<>();
+        String nextPageToken = null;
 
-        if (searchResultList != null && !searchResultList.isEmpty()) {
-            for (SearchResult searchResult : searchResultList) {
-                String videoId = searchResult.getId().getVideoId();
-                String videoTitle = searchResult.getSnippet().getTitle();
-                String videoUrl = "https://www.youtube.com/shorts/" + videoId; // 쇼츠 URL
+        do {
+            search.setPageToken(nextPageToken); // 다음 페이지 토큰 설정
+            // 요청 실행
+            SearchListResponse searchResponse = search.execute();
+            List<SearchResult> searchResultList = searchResponse.getItems();
 
-                // 조회수 정보 가져오기
-                YouTube.Videos.List videos = youtube.videos().list(Collections.singletonList("statistics"));
-                videos.setKey(apiKey);
-                videos.setId(Collections.singletonList(videoId));
-                VideoListResponse videoResponse = videos.execute();
-                List<Video> videoList = videoResponse.getItems();
-                long views = videoList.isEmpty() ? 0 : convertBigIntegerToLong(videoList.get(0).getStatistics().getViewCount());
+            if (searchResultList != null && !searchResultList.isEmpty()) {
+                for (SearchResult searchResult : searchResultList) {
+                    String videoId = searchResult.getId().getVideoId();
+                    String videoTitle = searchResult.getSnippet().getTitle();
+                    String videoUrl = "https://www.youtube.com/shorts/" + videoId; // 쇼츠 URL
 
-                // Shorts DTO 객체 생성 및 추가
-                Shorts shorts = new Shorts(videoTitle, videoUrl, views);
-                shortsList.add(shorts);
+                    // 조회수와 동영상 길이 가져오기
+                    YouTube.Videos.List videos = youtube.videos().list(Collections.singletonList("statistics,contentDetails"));
+                    videos.setKey(apiKey);
+                    videos.setId(Collections.singletonList(videoId));
+                    VideoListResponse videoResponse = videos.execute();
+                    List<Video> videoList = videoResponse.getItems();
+
+                    if (!videoList.isEmpty()) {
+                        Video video = videoList.get(0);
+                        long views = convertBigIntegerToLong(video.getStatistics().getViewCount());
+                        String duration = video.getContentDetails().getDuration();
+
+                        // 동영상 길이를 초로 변환
+                        long durationInSeconds = parseISO8601Duration(duration);
+
+                        // 동영상 길이가 60초 이하인 경우만 리스트에 추가
+                        if (durationInSeconds <= 60) {
+                            Shorts shorts = new Shorts(videoTitle, videoUrl, views);
+                            shortsList.add(shorts);
+                        }
+                    }
+                }
             }
-            return shortsList;
-        }
-        return Collections.emptyList();
+
+            nextPageToken = searchResponse.getNextPageToken(); // 다음 페이지 토큰 가져오기
+        } while (nextPageToken != null && shortsList.size() < 200); // 최대 200개까지 가져오기
+
+        return shortsList;
+    }
+
+    // ISO 8601 형식의 동영상 길이를 초 단위로 변환하는 메서드
+    private long parseISO8601Duration(String duration) {
+        Duration dur = Duration.parse(duration);
+        return dur.getSeconds();
     }
 
     private long convertBigIntegerToLong(BigInteger bigInteger) {

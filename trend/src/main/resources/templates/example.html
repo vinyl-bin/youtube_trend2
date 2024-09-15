@@ -24,7 +24,13 @@
 </div>
 <script th:inline="javascript">
     /*<![CDATA[*/
-    var shorts = /*[[${shorts}]]*/ [];
+
+    // shorts 배열에 200개의 예제 데이터를 생성합니다.
+    var shorts = Array.from({ length: 200 }, (_, i) => ({
+        title: `Short ${i + 1}`,  // 예제 제목
+        views: Math.floor(Math.random() * 1000),  // 무작위 조회수
+        url: `https://example.com/short${i + 1}`  // 예제 URL
+    }));
 
     var labels = shorts.map(function(short) {
         return short.title; // 라벨 이름만 반환
@@ -58,9 +64,7 @@
                 data: data,
                 backgroundColor: backgroundColors,
                 borderColor: borderColors,
-                borderWidth: 1,
-                barThickness: 15,  // 바의 고정 두께 설정
-                maxBarThickness: 15,  // 바의 최대 두께 설정
+                borderWidth: 1
             }]
         },
         options: {
@@ -72,26 +76,14 @@
                     beginAtZero: true,
                     ticks: {
                         maxTicksLimit: 200,  // X축에 최대 200개의 라벨만 표시
-                    },
-                    grid: {
-                        display: false  // X축 그리드 라인 숨기기
                     }
                 },
                 y: {
-                    barPercentage: 1.0, // 바의 너비를 고정
-                    categoryPercentage: 1.0, // 카테고리 간의 간격을 고정
-                    barThickness: 15,  // 바의 고정 두께 설정
-                    maxBarThickness: 15,  // 바의 최대 두께 설정
-                    minBarLength: 2,  // 바의 최소 길이 설정
+                    barPercentage: 0.5, // 바의 너비를 조정
+                    categoryPercentage: 0.8, // 카테고리 간의 간격 조정
                     ticks: {
                         autoSkip: false,  // 모든 라벨 표시
                         padding: 10, // 라벨과 바 사이의 간격 조정
-                        font: {
-                            size: 12 // 라벨 폰트 크기 고정
-                        }
-                    },
-                    grid: {
-                        display: false  // Y축 그리드 라인 숨기기
                     }
                 }
             },
