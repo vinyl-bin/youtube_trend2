@@ -21,6 +21,7 @@ configurations {
 
 repositories {
 	mavenCentral()
+	maven { url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -39,6 +40,10 @@ dependencies {
 	implementation 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
 	implementation 'com.google.apis:google-api-services-youtube:v3-rev20230816-2.0.0'
 	implementation 'com.google.http-client:google-http-client-jackson2:1.39.2'
+
+	implementation 'com.opencsv:opencsv:5.7.1' // OpenCSV 라이브러리 추가
+
+	implementation 'com.github.shin285:KOMORAN:3.3.9'   //Komoran 형태소 분석기
 }
 
 tasks.named('test') {
