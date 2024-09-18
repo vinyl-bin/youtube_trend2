@@ -15,13 +15,11 @@ public class KeywordService implements IWordAnalysisService {
     Komoran nlp = null;
 
     private static final String[] FILE_PATHS = {
-            "src/main/resources/csv/youtube_title_des_date.csv",
-            "src/main/resources/csv/youtube_title_des_rating.csv",
-            "src/main/resources/csv/youtube_title_des_view.csv"
+            "src/main/resources/csv/youtube_title_des_viewCount_meme_2.csv"
     };
 
     public KeywordService() {
-        this.nlp = new Komoran(DEFAULT_MODEL.FULL); //학습데이터 경량화 버전
+        this.nlp = new Komoran(DEFAULT_MODEL.FULL); //학습데이터 버전
     }
 
     @Override
