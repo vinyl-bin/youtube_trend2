@@ -44,6 +44,12 @@ dependencies {
 	implementation 'com.opencsv:opencsv:5.7.1' // OpenCSV 라이브러리 추가
 
 	implementation 'com.github.shin285:KOMORAN:3.3.9'   //Komoran 형태소 분석기
+
+	// OpenKoreanTextProcessor 의존성 추가
+	implementation files('libs/open-korean-text-2.1.0.jar')
+
+	implementation 'org.scala-lang:scala-library:2.12.4'
+	implementation 'com.twitter.penguin:korean-text:4.4.4'
 }
 
 tasks.named('test') {

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import trend_analysis.trend.dto.Shorts;
 //import trend_analysis.trend.service.YouTubeService;
+import trend_analysis.trend.service.Keyword2Service;
 import trend_analysis.trend.service.KeywordService;
 import trend_analysis.trend.service.YoutubeTitleService;
 
@@ -24,6 +25,7 @@ public class ShortsController {
 //    private final YouTubeService youtubeService;
     private final YoutubeTitleService youtubeTitleService;
     private final KeywordService keywordService;
+    private final Keyword2Service keyword2Service;
 
     // GET 요청을 통해 인기 있는 쇼츠의 오디오 목록을 반환
 //    @GetMapping("/chart")
@@ -59,7 +61,7 @@ public class ShortsController {
     public String analyzeKeywords(Model model) {
         try {
             // KeywordService의 doWordAnalysis 메서드를 호출
-            Map<String, Integer> keywordMap = keywordService.doWordAnalysis();
+            Map<String, Integer> keywordMap = keyword2Service.doWordAnalysis();
 
             // 모델에 데이터 추가
             model.addAttribute("keywordMap", keywordMap);
@@ -71,5 +73,22 @@ public class ShortsController {
             return "error"; // 에러 페이지 템플릿으로 리다이렉트하거나 빈 데이터를 표시
         }
     }
+
+//    @GetMapping("/keyword")
+//    public String analyzeKeywords(Model model) {
+//        try {
+//            // KeywordService의 doWordAnalysis 메서드를 호출
+//            Map<String, Integer> keywordMap = keywordService.doWordAnalysis();
+//
+//            // 모델에 데이터 추가
+//            model.addAttribute("keywordMap", keywordMap);
+//
+//            return "keyword"; // 이 템플릿 이름이 src/main/resources/templates/keyword.html과 일치해야 합니다
+//        } catch (Exception e) {
+//            // 예외 처리
+//            e.printStackTrace();
+//            return "error"; // 에러 페이지 템플릿으로 리다이렉트하거나 빈 데이터를 표시
+//        }
+//    }
 
 }

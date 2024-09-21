@@ -51,7 +51,7 @@ public class YoutubeTitleService {
 
 
 
-        LocalDateTime startingDate = LocalDateTime.now().minusDays(7);
+        LocalDateTime startingDate = LocalDateTime.now().minusDays(1);
         int attempt = 0;
         final int maxAttempts = 6;
         List<Shorts> shortsList = new ArrayList<>();
@@ -59,7 +59,7 @@ public class YoutubeTitleService {
 
 //        shortsList.size() < 15
         while (true) {
-            LocalDateTime endDate = startingDate.plusDays(7);
+            LocalDateTime endDate = startingDate.plusDays(1);
             String formattedStartDate = startingDate.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
             String formattedEndDate = endDate.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
 
@@ -67,10 +67,11 @@ public class YoutubeTitleService {
             search.setKey(apiKey);
             search.setType(Collections.singletonList("video"));
             search.setOrder("viewCount");
+//            search.setOrder("rating");
             search.setMaxResults(MAX_RESULTS);
             search.setRegionCode("KR");
             search.setVideoDuration("short");
-            search.setQ("유행|밈"); // Adding the keywords   //챌린지, trend, 트랜드, meme
+            search.setQ("유행|밈|챌린지|트랜드|트렌드|짤|바이럴|커버|요즘뜨는"); // Adding the keywords   //챌린지, trend, 트랜드, meme
             search.setPublishedAfter(formattedStartDate);
             search.setPublishedBefore(formattedEndDate);
 
@@ -96,8 +97,8 @@ public class YoutubeTitleService {
                     System.out.println("더 이상 페이지가 존재하지 않습니다.");
                     System.out.println("약 2분간 정지");
                     Thread.sleep(2 * 60000);  //2분? 1분간 정지
-                    startingDate = startingDate.minusDays(7);
-                    System.out.println("Extended date range by 7 days.");
+                    startingDate = startingDate.minusDays(1);
+                    System.out.println("Extended date range by 1 days.");
                 }
 
                 if (attempt >= maxAttempts) {
@@ -126,75 +127,6 @@ public class YoutubeTitleService {
 
         writeToCSV(shortsList);
 
-//        YouTube.Search.List search = youtube.search().list(Collections.singletonList("id,snippet"));
-//        search.setKey(apiKey);
-//        search.setType(Collections.singletonList("video"));
-//        search.setOrder("viewCount");
-////        search.setOrder("date");
-////        search.setOrder("rating");                  //!--------------수정---------------!
-//        search.setMaxResults(MAX_RESULTS);
-//        search.setRegionCode("KR");
-//        search.setVideoDuration("short");
-//
-//        LocalDateTime now = LocalDateTime.now();
-//        LocalDateTime fourteenDaysAgo = now.minusDays(20);
-//        String formattedDate = fourteenDaysAgo.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_DATE_TIME);
-//        search.setPublishedAfter(formattedDate);
-//
-//        List<Shorts> shortsList = new ArrayList<>();
-//        String nextPageToken = null;
-//
-//        int attempt = 0;
-//        final int maxAttempts = 3;
-//
-//        while (true) {
-//            System.out.println("정보 개수: " + shortsList.size() + "시도 횟수: " + attempt);
-//            try {
-//                if (attempt > 0) {
-//                    Thread.sleep(2000 * attempt); // 이전 오류 시 더 긴 대기 시간을 줍니다. (재시도 대기시간 증가)
-//                }
-//
-//                search.setPageToken(nextPageToken);
-//                SearchListResponse searchResponse = search.execute();
-//                List<SearchResult> searchResultList = searchResponse.getItems();
-//
-//                if (searchResultList != null && !searchResultList.isEmpty()) {
-//                    processSearchResults(searchResultList, youtube, shortsList);
-//                }
-//
-//                nextPageToken = searchResponse.getNextPageToken();
-//                if (nextPageToken == null) {
-//                    attempt++;
-//                    System.out.println("더 이상 페이지가 존재하지 않습니다.");
-//                    System.out.println("약 2분간 정지");
-//                    Thread.sleep(2 * 60000);  //2분? 1분간 정지
-//                }
-//
-//                if (attempt >= maxAttempts) {
-//                    break;
-//                }
-//
-//
-//            } catch (IOException e) {
-//                attempt++;
-//                System.out.println("API 요청 중 오류 발생: " + e.getMessage());
-//
-//                if (attempt == maxAttempts) {
-//                    // 최대 시도 횟수가 초과되었을 때 수집된 데이터를 저장하고 루프 종료
-//                    writeToCSV(shortsList);
-//                    System.out.println("최대 시도 횟수를 초과하였습니다.");
-//                    break;
-//                } else {
-//                    System.out.println("재시도 " + attempt + " 중...");
-//                }
-//            } catch (InterruptedException e) {
-//                System.out.println("쓰레드가 인터럽트되었습니다: " + e.getMessage());
-//                Thread.currentThread().interrupt(); // 인터럽트 상태 복원
-//                break;
-//            }
-//        }
-//
-//        writeToCSV(shortsList);
     }
 
     private void processSearchResults(List<SearchResult> searchResultList, YouTube youtube, List<Shorts> shortsList) throws IOException {
@@ -232,9 +164,10 @@ public class YoutubeTitleService {
     }
 
     private void writeToCSV(List<Shorts> shortsList) {
-//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-//        String currentTime = LocalDateTime.now().format(formatter);
-        String fileName = "youtube_title_des_viewCount_meme_2.csv";                   //!--------------수정---------------!
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+        String currentTime = LocalDateTime.now().format(formatter);
+        String fileName = currentTime + "_youtube_current_viewCount_KRkeyword.csv";
+//        String fileName = "youtube_title_des_viewCount_meme_2.csv";                   //!--------------수정---------------!
         File csvFile = new File("src/main/resources/csv/" + fileName);
 
         File directory = new File("src/main/resources/csv");

@@ -15,20 +15,32 @@ public class KeywordService implements IWordAnalysisService {
     Komoran nlp = null;
 
     private static final String[] FILE_PATHS = {
-            "src/main/resources/csv/youtube_title_des_viewCount_meme_2.csv"
+            "src/main/resources/csv/20240919_222926_youtube_current_viewCount_KRkeyword.csv"
     };
 
     public KeywordService() {
-        this.nlp = new Komoran(DEFAULT_MODEL.FULL); //학습데이터 버전
+        this.nlp = new Komoran(DEFAULT_MODEL.LIGHT); //학습데이터 버전
     }
 
     @Override
     public List<String> doWordNouns(String text) throws Exception {
-        String replace_text = text.replace("[^가-힣a-zA-Z0-9", " ");  //한국어, 영어, 숫자 제외 단어 모두 빈칸으로 변환
+        String replace_text = text.replaceAll("[^가-힣a-zA-Z0-9]", " ");   //한국어, 영어, 숫자 제외 단어 모두 빈칸으로 변환
+//        String replace_text = text.replaceAll("[^가-힣0-9]", " ");
         String trim_text = replace_text.trim();  // 분석할 문장 앞, 뒤에 존재할 수 있는 필요 없는 공백 제거
 
         KomoranResult analyzeResultList = this.nlp.analyze(trim_text);
-        List<String> rList = analyzeResultList.getNouns();  //명사만 가져오기
+//        List<String> rList = analyzeResultList.getNouns();  //명사만 가져오기
+        List<String> rList = analyzeResultList.getMorphesByTags(
+                "NNG", "NNP", // 명사
+                "VV", "VA",   // 동사, 형용사
+                "MM",         // 관형사
+                "MAG",        // 일반 부사
+                "IC",         // 감탄사
+                "XR",         // 어근
+                "XPN",        // 접두사
+                "XSA",        // 형용사 파생 접미사
+                "XSN"         // 명사 파생 접미사
+        );
 
         // 중복을 제거하기 위해 Set 사용
         Set<String> wordSet = new HashSet<>(rList);
