@@ -34,20 +34,6 @@ public class Keyword2Service implements IWordAnalysisService {
         String replace_text = text.replaceAll("[^가-힣a-zA-Z0-9]", " ");
         String trim_text = replace_text.trim();  // 공백 제거
 
-//        // 텍스트를 분석하여 토큰화
-//        Seq<KoreanTokenizer.KoreanToken> tokens = OpenKoreanTextProcessorJava.tokenize(trim_text);
-//        // 토큰을 Java에서 사용할 수 있는 리스트로 변환
-//        List<KoreanTokenJava> tokenList = OpenKoreanTextProcessorJava.tokensToJavaKoreanTokenList(tokens);
-//
-//        // 명사(Noun)만 필터링
-//        List<String> rList = new ArrayList<>();
-//        for (KoreanTokenJava token : tokenList) {
-//            if (token.getPos().toString().equals("Noun")) {
-//                rList.add(token.getText());
-//            }
-//        }
-
-
         // 띄어쓰기로 분리
         String[] words = trim_text.split("\\s+");
         List<String> rList = new ArrayList<>();
@@ -55,11 +41,6 @@ public class Keyword2Service implements IWordAnalysisService {
         // 각 단어를 검사
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
-
-            // 챌린지, 트렌드, 짤가 있는 경우
-//            if (i > 0 && (word.equals("챌린지") || word.equals("트렌드") || word.equals("트랜드") || word.equals("짤") || word.equals("밈"))) {
-//                rList.add(words[i - 1]); // 앞 단어(A)를 추가
-//            }
 
             //문장에서 명사 추출
             Seq<KoreanTokenizer.KoreanToken> tokens = OpenKoreanTextProcessorJava.tokenize(word);
@@ -97,18 +78,7 @@ public class Keyword2Service implements IWordAnalysisService {
 
         return rList;
 
-//        // 띄어쓰기로 분리
-//        String[] words = trim_text.split("\\s+");
-//        List<String> rList = new ArrayList<>();
-//
-//        // 각 단어를 검사하고 리스트에 추가
-//        Collections.addAll(rList, words);
-//
-//        // 중복 제거
-//        Set<String> wordSet = new HashSet<>(rList);
-//        rList = new ArrayList<>(wordSet);
-//
-//        return rList;
+
 
     }
 
@@ -144,11 +114,11 @@ public class Keyword2Service implements IWordAnalysisService {
 
         for (String word : pList) {
             int frequency = 0;
-            
+
             if (word == null) {
                 word = "";
             }
-            
+
             for (String word2 : pList) {
                 if (word.equals(word2)) {
                     frequency++;
@@ -167,7 +137,7 @@ public class Keyword2Service implements IWordAnalysisService {
 //        }
 
         return rMap;
-        
+
     }
 
     @Override
