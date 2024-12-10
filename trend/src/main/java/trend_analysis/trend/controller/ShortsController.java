@@ -11,7 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import trend_analysis.trend.dto.Shorts;
 //import trend_analysis.trend.service.YouTubeService;
 import trend_analysis.trend.service.Keyword2Service;
-import trend_analysis.trend.service.KeywordService;
+//import trend_analysis.trend.service.KeywordService;
+import trend_analysis.trend.service.Keyword3Service;
 import trend_analysis.trend.service.YoutubeTitleService;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ public class ShortsController {
 
 //    private final YouTubeService youtubeService;
     private final YoutubeTitleService youtubeTitleService;
-    private final KeywordService keywordService;
+//    private final KeywordService keywordService;
     private final Keyword2Service keyword2Service;
 
     // GET 요청을 통해 인기 있는 쇼츠의 오디오 목록을 반환

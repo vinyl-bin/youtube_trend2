@@ -9,12 +9,17 @@ import scala.collection.Seq;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
-public class Keyword2Service implements IWordAnalysisService {
+public class Keyword3Service implements IWordAnalysis2Service {
 
 //    private static Set<String> removeSet = new HashSet<>();
+
 
     LocalDateTime startingDate = LocalDateTime.now().toLocalDate().atStartOfDay().minusDays(1);
 
@@ -24,7 +29,7 @@ public class Keyword2Service implements IWordAnalysisService {
             "src/main/resources/csv/20240925_youtube_KR_viewCount.csv"
     };
 
-    public Keyword2Service() {
+    public Keyword3Service() {
         // 생성자에서 특별한 초기화 작업이 필요하지 않음
     }
 
@@ -34,20 +39,6 @@ public class Keyword2Service implements IWordAnalysisService {
         String replace_text = text.replaceAll("[^가-힣a-zA-Z0-9]", " ");
         String trim_text = replace_text.trim();  // 공백 제거
 
-//        // 텍스트를 분석하여 토큰화
-//        Seq<KoreanTokenizer.KoreanToken> tokens = OpenKoreanTextProcessorJava.tokenize(trim_text);
-//        // 토큰을 Java에서 사용할 수 있는 리스트로 변환
-//        List<KoreanTokenJava> tokenList = OpenKoreanTextProcessorJava.tokensToJavaKoreanTokenList(tokens);
-//
-//        // 명사(Noun)만 필터링
-//        List<String> rList = new ArrayList<>();
-//        for (KoreanTokenJava token : tokenList) {
-//            if (token.getPos().toString().equals("Noun")) {
-//                rList.add(token.getText());
-//            }
-//        }
-
-
         // 띄어쓰기로 분리
         String[] words = trim_text.split("\\s+");
         List<String> rList = new ArrayList<>();
@@ -55,11 +46,6 @@ public class Keyword2Service implements IWordAnalysisService {
         // 각 단어를 검사
         for (int i = 0; i < words.length; i++) {
             String word = words[i];
-
-            // 챌린지, 트렌드, 짤가 있는 경우
-//            if (i > 0 && (word.equals("챌린지") || word.equals("트렌드") || word.equals("트랜드") || word.equals("짤") || word.equals("밈"))) {
-//                rList.add(words[i - 1]); // 앞 단어(A)를 추가
-//            }
 
             //문장에서 명사 추출
             Seq<KoreanTokenizer.KoreanToken> tokens = OpenKoreanTextProcessorJava.tokenize(word);
@@ -115,40 +101,46 @@ public class Keyword2Service implements IWordAnalysisService {
 
 
     @Override
-    public Map<String, Integer> doWordCount(List<String> pList) throws Exception {
+    public Map<String, Integer> doWordCount(List<String> pList, String dateStr, int viewCount, int likeCount) throws Exception {
         if (pList == null) {
             pList = new ArrayList<>();
         }
 
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        // 올바른 패턴 설정
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+
+        // 문자열을 LocalDateTime으로 변환
+        LocalDateTime dateTime = LocalDateTime.parse(dateStr, formatter);
+        System.out.println("Parsed date and time: " + dateTime);
+
+        // startingDate 설정 (임의의 값)
+//            LocalDateTime startingDate = LocalDateTime.now();  // 현재 시간을 startingDate로 설정
+
+        long daysBetween = ChronoUnit.DAYS.between(dateTime, startingDate);
+
+
+        // 날짜에 따른 가중치 계산 (날짜가 가까울수록 가중치가 높음)
+        double dateWeight = 1.0 - (daysBetween * 0.1);
+        if (dateWeight < 0.1) dateWeight = 0.1; // 최소 가중치
+
+        // 조회수 대비 좋아요 수 비율 계산 (likeCount / viewCount)
+        double likeRatio = (viewCount > 0) ? (double) likeCount / viewCount : 0;
+        double likeWeight = 1.0 + (likeRatio * 2); // 좋아요 비율에 따른 가중치 (최소 1, 최대 3)
+
+
+
         Map<String, Integer> rMap = new HashMap<>();
-
-//        // 맵의 키는 중복되면 안되기 때문에 set을 이용하여 중복 제거
-//        Set<String> rSet = new HashSet<>(pList);
-//        Iterator<String> it = rSet.iterator();
-//
-//        while (it.hasNext()) {
-//            String word = it.next();
-//
-//            // 단어가 null이면 빈 문자열로 처리
-//            if (word == null) {
-//                word = "";
-//            }
-//
-//            // 단어가 중복 저장되어 있는 pList로부터 단어의 빈도수 가져오기
-//            int frequency = Collections.frequency(pList, word);
-//
-//            rMap.put(word, frequency);
-//        }
-//        return rMap;
-
 
         for (String word : pList) {
             int frequency = 0;
-            
+
             if (word == null) {
                 word = "";
             }
-            
+
             for (String word2 : pList) {
                 if (word.equals(word2)) {
                     frequency++;
@@ -158,57 +150,84 @@ public class Keyword2Service implements IWordAnalysisService {
                 }
 
             }
-            rMap.put(word, frequency);
+            // 가중치를 빈도수에 적용
+            int weightedFrequency = (int) (frequency * dateWeight * likeWeight);
+            rMap.put(word, weightedFrequency);
         }
 
-//        // removeList에 있는 요소들을 rMap에서 제거
-//        for (String wordToRemove : removeList) {
-//            rMap.remove(wordToRemove);  // removeList의 단어를 rMap에서 제거
-//        }
 
         return rMap;
-        
+
     }
 
     @Override
     public Map<String, Integer> doWordAnalysis() throws Exception {
         Map<String, Integer> totalWordCountMap = new HashMap<>();
+        String regex = "\"([^\"]*)\"|([^,]+)";
+        Pattern pattern = Pattern.compile(regex);
 
         // 3개의 CSV 파일을 순차적으로 처리
         for (String csvFile : FILE_PATHS) {
-            BufferedReader reader = new BufferedReader(new FileReader(csvFile));
-            String line;
+            try (BufferedReader reader = new BufferedReader(new FileReader(csvFile))) {
+                String line;
+                String currentDate = null;
+                int viewCount = 0;
+                int likeCount = 0;
 
-            // 파일의 각 줄을 읽어서 처리
-            while ((line = reader.readLine()) != null) {
-                List<String> rList = this.doWordNouns(line);
-                if (rList == null) {
-                    rList = new ArrayList<>();
-                }
-                Map<String, Integer> rMap = this.doWordCount(rList);
+                // 파일의 각 줄을 읽어서 처리
+                while ((line = reader.readLine()) != null) {
+                    List<String> fields = new ArrayList<>();
+                    Matcher matcher = pattern.matcher(line);
 
-                if (rMap == null) {
-                    rMap = new HashMap<>();
-                }
+                    // 정규식을 사용해 필드를 추출
+                    while (matcher.find()) {
+                        if (matcher.group(1) != null) {
+                            // 그룹 1: 따옴표로 묶인 필드
+                            fields.add(matcher.group(1).trim());
+                        } else if (matcher.group(2) != null) {
+                            // 그룹 2: 따옴표로 묶이지 않은 필드
+                            fields.add(matcher.group(2).trim());
+                        }
+                    }
 
-                // 단어 빈도수를 합산
-                for (Map.Entry<String, Integer> entry : rMap.entrySet()) {
-                    String word = entry.getKey();
-                    int count = entry.getValue();
+                    // 필드 수가 부족한 경우 다음 라인으로 넘어감
+                    if (fields.size() < 4) continue;
 
-                    // 기존에 존재하는 단어면 기존 값에 더하기
-                    totalWordCountMap.put(word, totalWordCountMap.getOrDefault(word, 0) + count);
+                    // 날짜 필드 체크 (-1일 경우 날짜로 인식)
+                    if (fields.get(2).equals("-1") && fields.get(3).equals("-1")) {
+                        currentDate = fields.get(0); // 날짜 저장
+                    } else {
+                        // 조회수와 좋아요 수
+                        viewCount = Integer.parseInt(fields.get(2).trim());
+                        likeCount = Integer.parseInt(fields.get(3).trim());
+
+                        // 키라인 생성
+                        String keyLine = fields.get(0) + fields.get(1);
+
+                        // 명사 추출 및 단어 빈도수 계산
+                        List<String> rList = this.doWordNouns(keyLine);
+                        if (rList == null) {
+                            rList = new ArrayList<>();
+                        }
+                        Map<String, Integer> rMap = this.doWordCount(rList, currentDate, viewCount, likeCount);
+
+                        if (rMap == null) {
+                            rMap = new HashMap<>();
+                        }
+
+                        // 단어 빈도수를 합산
+                        for (Map.Entry<String, Integer> entry : rMap.entrySet()) {
+                            String word = entry.getKey();
+                            int count = entry.getValue();
+
+                            // 기존에 존재하는 단어면 기존 값에 더하기
+                            totalWordCountMap.put(word, totalWordCountMap.getOrDefault(word, 0) + count);
+                        }
+                    }
                 }
             }
-            reader.close(); // 파일을 다 읽었으면 닫기
         }
-
-
-//        for (String wordToRemove : removeSet) {
-//            totalWordCountMap.remove(wordToRemove);  // removeList의 단어를 rMap에서 제거
-//        }
-
-        return sortByValueDescending(totalWordCountMap);
+        return totalWordCountMap;
     }
 
     private Map<String, Integer> sortByValueDescending(Map<String, Integer> map) {
