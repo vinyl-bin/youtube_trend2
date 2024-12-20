@@ -20,8 +20,10 @@ public class Keyword2Service implements IWordAnalysisService {
 
     private static final String[] FILE_PATHS = {
 //            "src/main/resources/csv/20240919_222926_youtube_current_viewCount_KRkeyword.csv"
-            "src/main/resources/csv/20240925_youtube_KR_rating.csv",
-            "src/main/resources/csv/20240925_youtube_KR_viewCount.csv"
+//            "src/main/resources/csv/20240925_youtube_KR_rating.csv",
+//            "src/main/resources/csv/20240925_youtube_KR_viewCount.csv",
+            "src/main/resources/csv/20241210_youtube_KR_rating.csv",
+            "src/main/resources/csv/20241220_youtube_KR_rating.csv"
     };
 
     public Keyword2Service() {
@@ -115,12 +117,14 @@ public class Keyword2Service implements IWordAnalysisService {
         for (String word : pList) {
             int frequency = 0;
 
-            if (word == null) {
+            if (word == null || word.matches("\\d+") || word.matches("[a-zA-Z]+") || word.matches("유행|밈|챌린지|트랜드|트렌드|짤|바이럴|커버|요즘")) {
                 word = "";
             }
 
             for (String word2 : pList) {
-                if (word.equals(word2)) {
+                if (word.equals("")){
+                    continue;
+                } else if (word.equals(word2)) {
                     frequency++;
                 } else if (word2.contains(word)) {
                     frequency++;
@@ -173,10 +177,6 @@ public class Keyword2Service implements IWordAnalysisService {
             reader.close(); // 파일을 다 읽었으면 닫기
         }
 
-
-//        for (String wordToRemove : removeSet) {
-//            totalWordCountMap.remove(wordToRemove);  // removeList의 단어를 rMap에서 제거
-//        }
 
         return sortByValueDescending(totalWordCountMap);
     }

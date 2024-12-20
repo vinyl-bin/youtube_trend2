@@ -61,7 +61,7 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="entry, iterStat : ${keywordMap}" th:if="${entry.value > 5}">
+        <tr th:each="entry, iterStat : ${keywordMap}" th:if="${entry.value > 2}">
             <td th:text="${iterStat.count}"></td>
             <td th:text="${entry.key}"></td>
             <td th:text="${entry.value}"></td>

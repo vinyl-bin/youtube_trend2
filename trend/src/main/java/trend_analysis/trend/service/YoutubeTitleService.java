@@ -219,7 +219,7 @@ public class YoutubeTitleService {
                 String duration = video.getContentDetails().getDuration();
                 long durationInSeconds = parseISO8601Duration(duration);
 
-                if (durationInSeconds <= 60) {
+                if (durationInSeconds <= 120) {
                     int viewCountInt = viewCount.intValue();
                     int likeCountInt = likeCount.intValue();
                     Shorts shorts = new Shorts(videoTitle, videoDescription, viewCountInt, likeCountInt);
