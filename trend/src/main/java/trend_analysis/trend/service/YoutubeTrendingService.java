@@ -17,7 +17,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -84,6 +86,13 @@ public class YoutubeTrendingService {
     private List<String> apiKeys;
     private final AtomicInteger keyIndex = new AtomicInteger(0);
 
+    /* 3가지 정렬 × 3페이지 = 9페이지 */
+    private static final List<String> ORDERS = List.of("date", "viewCount", "relevance");
+    private static final int PAGES_PER_ORDER = 3;
+
+    /* 중복 영상 방지를 위한 videoId 집합 */
+    private final Set<String> seenVideoIds = new HashSet<>();
+
     @PostConstruct
     public void init() {
         this.apiKeys = List.of(key1, key2, key3, key4);
@@ -91,110 +100,105 @@ public class YoutubeTrendingService {
 
     private String nextKey() {
         int idx = keyIndex.getAndUpdate(i -> (i + 1) % apiKeys.size());
-        System.out.println("인덱스 : " + idx);
         return apiKeys.get(idx);
     }
 
     /**
-     * 30분 간격 실행 전제 · 8페이지(최대 400 개) 수집
+     * 30분 간격 실행 · 9페이지 수집 (중복 제거)
      */
     public void fetchAndSaveLastQuarter() {
         Instant now = Instant.now();
+        ZoneId seoul = ZoneId.of("Asia/Seoul");
+
+        LocalDateTime cutoff = LocalDateTime.ofInstant(now, seoul).minusMinutes(30);
+        LocalDateTime collectedAt = LocalDateTime.now(seoul).truncatedTo(ChronoUnit.MINUTES);
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String ts = collectedAt.format(fmt);
 
         String publishedAfter = now.minus(30, ChronoUnit.MINUTES).toString();
-        LocalDateTime cutoff = LocalDateTime.ofInstant(now, ZoneId.of("Asia/Seoul"))
-                .minusMinutes(30);
-
-        LocalDateTime collectedAt = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
-                .truncatedTo(ChronoUnit.MINUTES);
-
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String ts = collectedAt.format(fmt);          // ← 로그용 타임스탬프
 
         List<YoutubeRaw> batch = new ArrayList<>();
-        String pageToken = null;      // 첫 페이지
-        int pageLimit = 8;            // 8 페이지(≈ 400 개)
 
-        for (int page = 0; page < pageLimit; page++) {
-            try {
-                SearchListResponse resp = youtube.search()
-                        .list(List.of("snippet"))
-                        .setKey(nextKey())                 // 키 라운드로빈
-                        .setQ(KO_JOSA_QUERY)
-                        .setType(List.of("video"))
-                        .setOrder("date")
-                        .setRegionCode("KR")
-                        .setPublishedAfter(publishedAfter)
-                        .setRelevanceLanguage("ko")
-                        .setMaxResults(50L)
-                        .setPageToken(pageToken)           // 다음 페이지
-                        .execute();
+        for (String order : ORDERS) {
+            String pageToken = null;
+            for (int p = 0; p < PAGES_PER_ORDER; p++) {
+                try {
+                    SearchListResponse resp = youtube.search()
+                            .list(List.of("snippet"))
+                            .setKey(nextKey())
+                            .setQ(KO_JOSA_QUERY)
+                            .setType(List.of("video"))
+                            .setOrder(order)
+                            .setRegionCode("KR")
+                            .setPublishedAfter(publishedAfter)
+                            .setRelevanceLanguage("ko")
+                            .setMaxResults(50L)
+                            .setPageToken(pageToken)
+                            .execute();
 
-                /* ① 페이지별 원본 개수 */
-                int rawCnt = resp.getItems().size();
-                System.out.printf("---[%s] [Page %d] raw items = %d%n", ts, page + 1, rawCnt);
+                    int rawCnt = resp.getItems().size();
+                    System.out.printf("---[%s] [%s Page %d] raw items = %d%n", ts, order, p + 1, rawCnt);
 
-                for (SearchResult item : resp.getItems()) {
+                    pageToken = processItems(resp, batch, cutoff, collectedAt, ts);
+                    if (pageToken == null) break;
 
-                    // --- 업로드 시각을 LocalDateTime(서울)로 변환 ---
-                    DateTime ytTime   = item.getSnippet().getPublishedAt();   // YouTube DateTime
-                    Instant  instant  = Instant.ofEpochMilli(ytTime.getValue());
-                    LocalDateTime uploaded = LocalDateTime.ofInstant(instant, ZoneId.of("Asia/Seoul"));
-
-
-                    if (uploaded.isBefore(cutoff)) {      // 30분보다 이전이면
-                        System.out.printf("---[%s] 30분 경계 도달 → 수집 종료%n", ts);
-                        continue;                            // 처리 종료
-                    }
-
-                    var sn = item.getSnippet();
-                    String title = sn.getTitle().replace("\n", " ");
-                    String desc  = sn.getDescription().replace("\n", " ").trim();
-
-                    /* ② 영상 제목·설명 한 줄 로그 */
-                    System.out.printf("  - %s | %s%n", title, desc);
-
-                    YoutubeRaw r = new YoutubeRaw();
-                    r.setTime(collectedAt);
-                    r.setTitle(title);
-                    r.setDes(desc);
-                    batch.add(r);
+                } catch (Exception e) {
+                    handleException(e);
+                    break;
                 }
-
-
-                pageToken = resp.getNextPageToken();
-                if (pageToken == null) {
-                    /* ③ 다음 페이지 없음 */
-                    System.out.printf("---[%s] 더 이상 페이지 없음%n", ts);
-                    break;             // 더 이상 페이지 없음
-                }
-            }
-            /* API 오류 처리 */
-            catch (com.google.api.client.googleapis.json.GoogleJsonResponseException e) {
-                System.err.printf("API 오류 %d : %s%n",
-                        e.getDetails().getCode(), e.getDetails().getMessage());
-                if ("quotaExceeded".equals(e.getDetails().getErrors()
-                        .get(0).getReason())) {
-                    // 다음 키로 바로 시도
-                    continue;
-                }
-                break;
-            }
-            catch (java.io.IOException e) {
-                System.err.println("네트워크 오류: " + e.getMessage());
-                break;
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-                break;
             }
         }
 
         if (!batch.isEmpty()) {
             repository.saveAll(batch);
-            System.out.printf("----------------------Saved %d Korean videos%n", batch.size());
+            System.out.printf("----------------------Saved %d unique Korean videos%n", batch.size());
         } else {
-            System.out.println("----------------------수집된 한국어 영상이 없습니다.");
+            System.out.println("----------------------No Korean videos");
+        }
+    }
+
+    private String processItems(SearchListResponse resp, List<YoutubeRaw> batch,
+                                LocalDateTime cutoff, LocalDateTime collectedAt, String ts) {
+        String pageToken = resp.getNextPageToken();
+
+        for (SearchResult item : resp.getItems()) {
+            String videoId = item.getId().getVideoId();
+            if (!seenVideoIds.add(videoId)) {
+                // 이미 수집한 영상
+                continue;
+            }
+
+            DateTime ytTime = item.getSnippet().getPublishedAt();
+            Instant instant = Instant.ofEpochMilli(ytTime.getValue());
+            LocalDateTime uploaded = LocalDateTime.ofInstant(instant, ZoneId.of("Asia/Seoul"));
+            if (uploaded.isBefore(cutoff)) continue; // 30분 이전 → skip
+
+            var sn = item.getSnippet();
+            String title = sn.getTitle().replace("\n", " ");
+            String desc = sn.getDescription().replace("\n", " ").trim();
+
+            YoutubeRaw r = new YoutubeRaw();
+            r.setTime(collectedAt);
+            r.setTitle(title);
+            r.setDes(desc);
+            batch.add(r);
+        }
+
+        if (pageToken == null) {
+            System.out.printf("---[%s] No more pages%n", ts);
+        }
+        return pageToken;
+    }
+
+    private void handleException(Exception e) {
+        if (e instanceof com.google.api.client.googleapis.json.GoogleJsonResponseException apiEx) {
+            System.err.printf("API error %d : %s%n", apiEx.getDetails().getCode(), apiEx.getDetails().getMessage());
+            if ("quotaExceeded".equals(apiEx.getDetails().getErrors().get(0).getReason())) return;
+        } else if (e instanceof java.io.IOException ioEx) {
+            System.err.println("network error: " + ioEx.getMessage());
+        } else {
+            e.printStackTrace();
         }
     }
 }
+
