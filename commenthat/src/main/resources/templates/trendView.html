@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>트렌드 분석</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="p-8">
+<h1 class="text-3xl font-bold mb-6">트렌드 분석</h1>
+
+<div th:each="category : ${categories}" class="mb-8">
+    <h2 class="text-2xl font-semibold mb-3">
+        <a th:href="@{/trend/{category}(category=${category.category})}" class="text-blue-600 hover:underline">
+        <span th:switch="${category.category}">
+            <span th:case="'current'">시사</span>
+            <span th:case="'meme'">밈</span>
+            <span th:case="'challenge'">챌린지</span>
+            <span th:case="'entertainment'">연예/방송</span>
+            <span th:case="'others'">이외</span>
+            <span th:case="*">이외</span>
+        </span>
+        </a>
+    </h2>
+    <table class="min-w-full border border-gray-300">
+        <thead>
+        <tr class="bg-gray-100">
+            <th class="p-2 border">키워드</th>
+            <th class="p-2 border">비고</th>
+            <th class="p-2 border">개수</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="trend : ${category.trends}">
+            <td class="p-2 border" th:text="${trend.word}"></td>
+            <td class="p-2 border" th:text="${trend.note}"></td>
+            <td class="p-2 border text-center" th:text="${trend.count}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

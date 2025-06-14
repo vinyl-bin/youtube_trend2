@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${category} + ' 트렌드 분석'">트렌드 분석</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            padding: 30px;
+        }
+        #chart-container {
+            width: 1300px;
+            height: 1000px;
+            margin: 0 auto;
+            display: flex;
+            /*justify-content: center;*/
+            /*align-items: center;*/
+        }
+    </style>
+</head>
+<body>
+
+<h1 th:text="'카테고리: ' + ${category}"></h1>
+
+<div id="chart-container">
+    <canvas id="trendChart"></canvas>
+</div>
+
+<script th:inline="javascript">
+    let trends = /*[[${trendsJson}]]*/ '[]';
+    let parsedTrends = JSON.parse(trends);
+
+    // count 높은 순으로 정렬
+    parsedTrends.sort((a, b) => b.count - a.count);
+    parsedTrends = parsedTrends.slice(0, 10);
+
+    let labels = parsedTrends.map(t => t.word);
+    let counts = parsedTrends.map(t => t.count);
+
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '언급 횟수',
+                data: counts,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                },
+                y: {
+                    ticks: {
+                        font: {
+                            size: 16   // 여기가 핵심
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
